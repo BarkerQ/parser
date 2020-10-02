@@ -27,6 +27,11 @@ class NewInform implements ParserInterface
     const COUNT_ITEMS_IN_PAGE = 10;
 
     /**
+     * Данные для вычета из даты.
+     */
+    const TIME_UTC0 = "-3 hours";
+
+    /**
      * Задаем переменную для записи в нее постов.
      * @var array
      */
@@ -69,23 +74,20 @@ class NewInform implements ParserInterface
     private static function foreachPosts(object $items) : void
     {
         foreach ($items->posts->data as $item) {
+            $timestampItem = strtotime($item->public_publish_date);
+            $newTimestamp = strtotime(self::TIME_UTC0, $timestampItem);
+
             $post = new NewsPost(static::class,
                                  $item->title,
-                                 $item->content,
-                                 $item->public_publish_date,
-                                 $item->main_image->links->original,
-                                 $item->fulllink);
+                                 $item->seo_description,
+                                 date('Y-m-d H:i:s', $newTimestamp),
+                                 $item->fulllink,
+                                 $item->mainImageLink->original);
 
             // Блок добавления текста к посту.
             self::typeItem($post,
                            NewsPostItem::TYPE_TEXT,
-                           $item->seo_description);
-
-            // Блок добавления картинки к посту.
-            self::typeItem($post,
-                           NewsPostItem::TYPE_IMAGE,
-                           null,
-                           $item->main_image->links->original);
+                           $item->content);
 
             // Блок добавления хеддера к посту.
             self::typeItem($post,
@@ -94,13 +96,6 @@ class NewInform implements ParserInterface
                            null,
                            null,
                            6);
-
-            // Блок добавления ссылки на оригинал к посту.
-            self::typeItem($post,
-                           NewsPostItem::TYPE_LINK,
-                           null,
-                           null,
-                           $item->fulllink);
 
             self::$posts[] = $post;
         }
